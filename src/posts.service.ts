@@ -30,21 +30,23 @@ export class PostsService {
     return postWithId;
   }
 
-  findMany({ skip, limit }: FindManyOptions = {}) {
-    let foundPosts = this.posts;
+  findMany({ skip, limit }: FindManyOptions = {}): Post[] {
+  let foundPosts = this.posts;
 
-    // Stryker disable next-line ConditionalExpression: The "true" mutant results in an equivalent mutant
-    if (skip !== undefined) {
-      foundPosts = foundPosts.slice(skip);
-    }
+  // Нормализация skip: отрицательные значения → 0
+  const safeSkip = skip !== undefined ? Math.max(skip, 0) : 0;
+  // Нормализация limit: отрицательные значения → 0, undefined → длина массива
+  const safeLimit = limit !== undefined ? Math.max(limit, 0) : foundPosts.length;
 
-    // Stryker disable next-line ConditionalExpression: The "true" mutant results in an equivalent mutant
-    if (limit !== undefined) {
-      foundPosts = foundPosts.slice(0, limit);
-    }
-
-    return foundPosts;
+  // Если limit равен 0, возвращаем пустой массив
+  if (safeLimit === 0) {
+    return [];
   }
+
+  // Применяем skip и limit за один вызов slice
+  return foundPosts.slice(safeSkip, safeSkip + safeLimit);
+}
+
 
   find(postId: string) {
     return this.posts.find(({ id }) => id === postId);
