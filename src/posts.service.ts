@@ -30,13 +30,19 @@ export class PostsService {
     return postWithId;
   }
 
-  findMany({ skip, limit }: FindManyOptions = {}): Post[] {
-  let foundPosts = this.posts;
+findMany({ skip, limit }: FindManyOptions = {}): Post[] {
+  // Нормализация skip: NaN → 0, отрицательные значения → 0
+  const safeSkip = skip !== undefined
+    ? Math.max(Number.isNaN(skip) ? 0 : skip, 0)
+    : 0;
 
-  // Нормализация skip: отрицательные значения → 0
-  const safeSkip = skip !== undefined ? Math.max(skip, 0) : 0;
-  // Нормализация limit: отрицательные значения → 0, undefined → длина массива
-  const safeLimit = limit !== undefined ? Math.max(limit, 0) : foundPosts.length;
+  // Нормализация limit: NaN → 0, отрицательные значения → 0, undefined → длина массива
+  let safeLimit: number;
+  if (limit !== undefined) {
+    safeLimit = Number.isNaN(limit) ? 0 : Math.max(limit, 0);
+  } else {
+    safeLimit = this.posts.length;
+  }
 
   // Если limit равен 0, возвращаем пустой массив
   if (safeLimit === 0) {
@@ -44,8 +50,12 @@ export class PostsService {
   }
 
   // Применяем skip и limit за один вызов slice
-  return foundPosts.slice(safeSkip, safeSkip + safeLimit);
+  // slice автоматически обрезает до конца массива, если конец выходит за границы
+  return this.posts.slice(safeSkip, safeSkip + safeLimit);
 }
+
+
+
 
 
   find(postId: string) {

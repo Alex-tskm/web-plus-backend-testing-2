@@ -24,23 +24,32 @@ const showReadableErrors = () => {
   const errors = Object.entries(mutation.files).reduce((acc, [fileName, value]) => {
     const mutants = value.mutants
       .filter(({ status }) => statuses.includes(status))
-      .map((mutant) => ({
-        fileName,
-        startLine: mutant.location.start.line,
-        startCol: mutant.location.start.column,
-        endLine: mutant.location.end.line,
-        endCol: mutant.location.end.column,
-        error: mutationsErrors.find(({ id }) => id === mutant.id).error,
-      }));
+      .map((mutant) => {
+        const errorInfo = mutationsErrors.find(({ id }) => id === mutant.id);
+        return {
+          fileName,
+          startLine: mutant.location.start.line,
+          startCol: mutant.location.start.column,
+          endLine: mutant.location.end.line,
+          endCol: mutant.location.end.column,
+          error: errorInfo ? errorInfo.error : 'No specific error information available (mutant ID: ' + mutant.id + ')'
+        };
+      });
 
     return [...acc, ...mutants];
   }, []);
+
+  if (errors.length === 0) {
+    console.log("\x1b[1;32m%s\x1b[0m", 'Все мутанты убиты! Мутационное тестирование пройдено успешно.');
+    return;
+  }
 
   console.log("\x1b[1;31m%s\x1b[0m", 'Ошибка в читаемом виде. Подробный вывод смотрите выше.');
   errors.forEach(({ fileName, error, startLine, endLine }) => {
     console.log(`Ошибка в файле \`${fileName}\`: ${error}. Обратите внимание на строчки с ${startLine} по ${endLine}.`);
   });
-}
+};
+
 
 async function test() {
   const originalConfig = `{"$schema":"./node_modules/@stryker-mutator/core/schema/stryker-schema.json","_comment":"Thisconfigwasgeneratedusing'strykerinit'.Pleasetakealookat:https://stryker-mutator.io/docs/stryker-js/configuration/formoreinformation","packageManager":"npm","plugins":["@stryker-mutator/jest-runner"],"reporters":["json"],"testRunner":"jest","jest":{"projectType":"custom","configFile":"./jest.config.json"},"mutate":["./src/posts.service.ts:33-47"],"thresholds":{"break":100},"concurrency":2}`;
